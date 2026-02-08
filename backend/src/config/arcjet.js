@@ -14,6 +14,8 @@ export const aj = arcjet({
             allow: [
                 "CATEGORY:SEARCH_ENGINE",
                 "CATEGORY:TOOL",
+                "CATEGORY:VERCEL",
+                "CATEGORY:MONITOR",
             ],
         }),
         // Rate limit requests to prevent abuse.

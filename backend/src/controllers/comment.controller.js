@@ -1,21 +1,26 @@
-import { getAuth } from "@clerk/express";
 import asyncHandler from "express-async-handler";
+import mongoose from "mongoose";
 import Comment from "../models/comment.model.js";
 import Notification from "../models/notification.model.js";
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 
+// get comments
 export const getComments = asyncHandler(async (req, res) => {
     const { postId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+    }
 
     const comments = await Comment.find({ post: postId })
         .sort({ createdAt: -1 })
         .populate("user", "username firstName lastName profilePicture")
 
     res.status(200).json({ comments })
-})
+});
 
-//create comment
+// create comment
 export const createComment = asyncHandler(async (req, res) => {
     const { userId } = getAuth(req);
     const { postId } = req.params;
@@ -47,8 +52,9 @@ export const createComment = asyncHandler(async (req, res) => {
         });
     }
     res.status(201).json({ comment });
-})
-//delete comment
+});
+
+// delete comment
 export const deleteComment = asyncHandler(async (req, res) => {
     const { userId } = getAuth(req);
     const { commentId } = req.params;
