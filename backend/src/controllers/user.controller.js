@@ -35,19 +35,51 @@ export const updateProfile = asyncHandler(async (req, res) => {
 
 export const syncUser = asyncHandler(async (req, res) => {
     const { userId } = getAuth(req);
+    const { email, name, image } = req.body;
+
     //check user if already exist 
     const existingUser = await User.findOne({ clerkId: userId });
     if (existingUser) {
         return res.status(200).json({ user: existingUser, message: "User already exists" });
     }
-    const clerkUser = await clerkClient.users.getUser(userId);
-    const userData = {
+
+    let userData = {
         clerkId: userId,
-        firstName: clerkUser.firstName || "",
-        lastName: clerkUser.lastName || "",
-        username: clerkUser.emailAddresses?.[0]?.emailAddress?.split('@')[0] || clerkUser.id,
-        profilePicture: clerkUser.imageUrl || "",
+        email,
+        firstName: name ? name.split(' ')[0] : "",
+        lastName: name ? name.split(' ').slice(1).join(' ') : "",
+        username: email ? email.split('@')[0] : userId,
+        profilePicture: image,
+    };
+
+    if (!email || !name) {
+        // Fallback to fetching from Clerk if body is missing data
+        try {
+            const clerkUser = await clerkClient.users.getUser(userId);
+            userData = {
+                clerkId: userId,
+                email: clerkUser.emailAddresses[0].emailAddress,
+                firstName: clerkUser.firstName || "",
+                lastName: clerkUser.lastName || "",
+                username: clerkUser.emailAddresses?.[0]?.emailAddress?.split('@')[0] || clerkUser.id,
+                profilePicture: clerkUser.imageUrl || "",
+            };
+        } catch (error) {
+            console.error("Error fetching user from Clerk:", error);
+            return res.status(500).json({ error: "Failed to sync user data" });
+        }
     }
+
+    // Ensure strictly required fields are present (schema requires firstName, lastName, username, email)
+    // If name was single word, lastName might be empty. Handle this.
+    if (!userData.lastName) userData.lastName = userData.firstName; // Fallback or leave empty? Schema says required.
+
+    // Handle duplicate username edge case
+    const usernameExists = await User.findOne({ username: userData.username });
+    if (usernameExists) {
+        userData.username = `${userData.username}_${Math.floor(Math.random() * 1000)}`;
+    }
+
     const user = await User.create(userData);
     res.status(201).json({ user, message: "User created successfully" });
 })

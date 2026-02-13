@@ -38,7 +38,7 @@ const startServer = async () => {
         await connectToDB();
 
         if (ENV.NODE_ENV !== 'production')
-            app.listen(ENV.PORT, () => {
+            app.listen(ENV.PORT, "0.0.0.0", () => {
                 console.log(`Server is running on port ${ENV.PORT}`);
             })
     } catch (error) {
@@ -47,7 +47,13 @@ const startServer = async () => {
 
     }
 }
-startServer();
+if (process.env.VERCEL === '1') {
+    // Vercel handles the server, just connect to DB
+    connectToDB();
+} else {
+    // valid for local development
+    startServer();
+}
 
 //export for vercel
 export default app;
