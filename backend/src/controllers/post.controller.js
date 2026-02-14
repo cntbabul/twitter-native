@@ -1,5 +1,5 @@
 import { getAuth } from "@clerk/express";
-import { v2 as cloudinary } from "cloudinary";
+import cloudinary from "../config/cloudinary.js";
 import asyncHandler from "express-async-handler";
 // import cloudinary from "../lib/cloudinary.js";
 import Comment from "../models/comment.model.js";
